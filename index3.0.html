@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CHICKY — Your annoying little buddy</title>
+<style>
+:root{font-family:ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif;color:#514434;background:#fff8e9}*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:22px}main{width:min(100%,650px);text-align:center}h1{font-size:clamp(32px,6vw,44px);margin:4px 0 0;letter-spacing:2px}header p{margin:0 0 18px;color:#9c8b78}.stats{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin:12px 0}.pill{background:#fff;border:2px solid #f1dfb9;border-radius:99px;padding:9px 15px;font-weight:700}.stage{position:relative;height:min(54vh,420px);min-height:300px;background:#fffdf7;border-radius:30px;overflow:hidden;display:grid;place-items:center;isolation:isolate;touch-action:manipulation}.floor{position:absolute;bottom:7%;width:68%;height:11px;border-radius:50%;background:#e9d5a2;filter:blur(3px);opacity:.75}.chick{position:absolute;left:50%;top:49%;width:min(56%,275px);height:77%;display:flex;align-items:center;justify-content:center;cursor:pointer;transform:translate(-50%,-50%);transform-origin:50% 76%;user-select:none;-webkit-user-select:none;will-change:transform,filter}.chick img{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 5px 1px #e6d6a950)}.chick:focus-visible{outline:3px solid #e5a52a;border-radius:20px}.message{min-height:30px;margin:13px 0;font-weight:700}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:470px;margin:auto}button{font:inherit}.actions button{border:2px solid #c79436;border-radius:15px;background:#f6ca62;color:#58421d;padding:12px 9px;font-weight:800;cursor:pointer;box-shadow:0 3px 0 #c79436;touch-action:manipulation}.actions button:active{transform:translateY(2px);box-shadow:0 1px 0 #c79436}.actions button:disabled{opacity:.6}small{display:block;color:#a3937f;margin:18px auto;line-height:1.6}.grain{position:absolute;z-index:5;font-size:22px;pointer-events:none;animation:grain 900ms ease-out forwards}.shock{position:absolute;top:12%;font-size:35px;pointer-events:none;animation:shock .3s infinite alternate}.shake{animation:screamShake 85ms infinite alternate}.wobble{animation:wobble 640ms ease-out}.bounce{animation:bounce 520ms cubic-bezier(.2,.8,.3,1.1)}.squish{animation:squish 360ms ease-out}.hiccup{animation:hiccup 420ms ease-out}.flash{animation:flash 170ms alternate 9}@keyframes bounce{0%{transform:translate(-50%,-50%) scale(1)}28%{transform:translate(-50%,-45%) scale(1.08,.88)}58%{transform:translate(-50%,-56%) scale(.93,1.12)}100%{transform:translate(-50%,-50%) scale(1)}}@keyframes squish{0%{transform:translate(-50%,-50%) scale(1)}35%{transform:translate(-50%,-45%) scale(1.15,.76)}65%{transform:translate(-50%,-55%) scale(.9,1.1)}100%{transform:translate(-50%,-50%) scale(1)}}@keyframes wobble{0%,100%{transform:translate(-50%,-50%) scale(1) rotate(0)}20%{transform:translate(-50%,-50%) scale(1.14,.88) rotate(-6deg)}45%{transform:translate(-50%,-50%) scale(.91,1.12) rotate(6deg)}70%{transform:translate(-50%,-50%) scale(1.06,.96) rotate(-3deg)}}@keyframes hiccup{40%{transform:translate(-50%,-57%) scale(1.08,.9)}70%{transform:translate(-50%,-49%) scale(.96,1.06)}}@keyframes screamShake{from{transform:translate(calc(-50% - 9px),calc(-50% + 4px)) rotate(-8deg) scale(1.05,1.12)}to{transform:translate(calc(-50% + 9px),calc(-50% - 5px)) rotate(8deg) scale(1.12,1.02)}}@keyframes flash{to{background:#fff1d3}}@keyframes grain{0%{opacity:0;transform:translateY(-80px) scale(.5)}25%{opacity:1}100%{opacity:0;transform:translateY(160px) rotate(100deg)}}@media(prefers-reduced-motion:reduce){.shake,.wobble,.bounce,.squish,.hiccup,.flash,.grain,.shock{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+</style>
+</head>
+<body>
+<main>
+<header><h1>🐥 CHICKY</h1><p>Your annoying little buddy</p></header>
+<div class="stats"><div class="pill">🪙 <span id="coins">0</span></div><div class="pill">🌾 <span id="riceCount">0</span> 把米</div><div class="pill">👆 <span id="pokes">0</span></div></div>
+<div class="stage" id="stage"><div class="floor"></div><div class="chick" id="chick" role="button" tabindex="0" aria-label="点击小鸡"><img id="picture" src="skinny.png" alt="CHICKY 小鸡"></div></div>
+<div class="message" id="message" aria-live="polite">一只新的瘦鸡诞生啦！</div>
+<div class="actions"><button id="feed">🌾 喂米</button><button id="scream">📢 尖叫</button><button id="poke">👆 戳戳鸡</button><button id="reset">↩️ 重新领养</button></div>
+<small>测试版：金币和喂食进度保存在当前浏览器；清除浏览器数据可能丢失。</small>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const stage=$('stage'),chick=$('chick'),picture=$('picture'),message=$('message');
+const images={skinny:'skinny.png',normal:'normal.png',full:'full.png',balloon:'balloon.png',scream:'scream.png'};
+let coins=readNumber('chickyCoins'),rice=readNumber('chickyRice'),pokes=0,busy=false,version=0;
+let audioContext=null;
+function readNumber(key){try{const n=Number(localStorage.getItem(key));return Number.isFinite(n)&&n>=0?n:0}catch{return 0}}
+function save(){try{localStorage.setItem('chickyCoins',String(coins));localStorage.setItem('chickyRice',String(rice))}catch{}}
+function update(){ $('coins').textContent=coins;$('riceCount').textContent=rice;$('pokes').textContent=pokes;save() }
+function base(){return rice>=8?'full':rice>=3?'normal':'skinny'}
+function show(which){picture.src=images[which]}
+function say(text){message.textContent=text}
+function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+function animate(name){chick.classList.remove('bounce','squish','wobble','hiccup');void chick.offsetWidth;chick.classList.add(name);setTimeout(()=>chick.classList.remove(name),700)}
+function start(){if(busy)return false;busy=true;return true}
+function finish(){busy=false;show(base());chick.classList.remove('shake');stage.classList.remove('flash');update()}
+function riceRain(){for(let i=0;i<8;i++){const grain=document.createElement('span');grain.className='grain';grain.textContent='🌾';grain.style.left=(24+Math.random()*52)+'%';grain.style.top=(8+Math.random()*18)+'%';grain.style.animationDelay=(i*75)+'ms';stage.appendChild(grain);setTimeout(()=>grain.remove(),1500)}}
+function tone(freq,duration,type='sawtooth',volume=.07,when=0,endFreq=null){if(!audioContext)return;const now=audioContext.currentTime+when,osc=audioContext.createOscillator(),gain=audioContext.createGain();osc.type=type;osc.frequency.setValueAtTime(Math.max(50,freq),now);if(endFreq)osc.frequency.exponentialRampToValueAtTime(Math.max(50,endFreq),now+duration);gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(Math.max(.0002,volume),now+.012);gain.gain.setValueAtTime(Math.max(.0002,volume),now+Math.max(.02,duration-.05));gain.gain.exponentialRampToValueAtTime(.0001,now+duration);osc.connect(gain);gain.connect(audioContext.destination);osc.start(now);osc.stop(now+duration+.02)}
+async function unlockSound(){try{audioContext??=new(window.AudioContext||window.webkitAudioContext)();if(audioContext.state==='suspended')await audioContext.resume()}catch{audioContext=null}}
+function peep(){tone(550,.12,'triangle',.035,0,820)}
+function crazyScream(){if(!audioContext)return;const length=2.4;for(let t=0;t<length;t+=.09){const pitch=280+Math.random()*1100;const lengthPart=Math.min(.115,length-t);tone(pitch,lengthPart,Math.random()>.5?'sawtooth':'square',.025,t,pitch*(.55+Math.random()*1.6))}tone(1050,.28,'sawtooth',.045,.18,330);tone(380,.5,'square',.025,1.65,140)}
+async function feed(){if(!start())return;const token=++version;await unlockSound();rice++;coins+=2;update();riceRain();peep();say('吧唧吧唧！又吃了一把米！');animate('bounce');await wait(430);if(token!==version)return;const next=base();show(next);animate('wobble');if(next==='full'){say('吃撑啦！肚子要爆炸了！');tone(180,.22,'triangle',.05,0,100);await wait(650);if(token!==version)return;animate('hiccup')}else if(rice===3){say('咦？小鸡长胖了一点！')}else if(rice<3){say('好吃！再来一点！')}await wait(420);if(token===version)finish()}
+async function scream(){if(!start())return;const token=++version;await unlockSound();show('scream');say('咯？！啊啊啊啊啊啊啊！！！');stage.classList.add('flash');chick.classList.add('shake');crazyScream();await wait(2400);if(token!==version)return;chick.classList.remove('shake');stage.classList.remove('flash');say('……刚刚什么都没发生。');animate('squish');await wait(400);if(token===version)finish()}
+async function poke(){if(!start())return;const token=++version;await unlockSound();pokes++;update();peep();animate('squish');say(pokes>=5?'别戳了！！我要飞了！！！':'喂！你戳我干嘛？！');await wait(350);if(token!==version)return;if(pokes>=5){show('balloon');say('膨胀！起飞！！！');chick.classList.remove('squish');const flight=chick.animate([{transform:'translate(-50%,-50%) scale(1)'},{transform:'translate(-85%,-90%) rotate(110deg) scale(1.35)'},{transform:'translate(-15%,-95%) rotate(270deg) scale(.8)'},{transform:'translate(-50%,-50%) rotate(720deg) scale(1)'}],{duration:1900,easing:'ease-in-out'});try{await flight.finished}catch{}if(token!==version)return;pokes=0;say('晕鸡回来了……')}else{coins++;update();await wait(300)}if(token===version)finish()}
+function reset(){version++;busy=false;rice=0;coins=0;pokes=0;chick.getAnimations().forEach(a=>a.cancel());chick.className='chick';stage.classList.remove('flash');show('skinny');say('一只新的瘦鸡诞生啦！');update()}
+$('feed').addEventListener('click',feed);$('scream').addEventListener('click',scream);$('poke').addEventListener('click',poke);$('reset').addEventListener('click',reset);chick.addEventListener('click',poke);chick.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();poke()}});
+picture.addEventListener('error',()=>say('图片没有加载：请确认五张 PNG 与 index.html 位于同一目录。'));
+show(base());update();
+</script>
+</body>
+</html>
